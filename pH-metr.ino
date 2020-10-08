@@ -1,18 +1,25 @@
-#include <LiquidCrystal.h>
-#include <OneWire.h>            // библиотека для работы с протоколом 1-Wire
-#include <DallasTemperature.h>  // библиотека для работы с датчиком DS18B20
+/* #######################################################################
+pH метр на базе Arduino Uno ver: 1.0
+Разработчики: Иванов Р.Н., Семеняченко А.А.
+https://github.com/Ushuiski/pH-meter
+#########################################################################*/
 
-#define BUZZER_PIN 13           // пин с пищалкой
-#define NUM_ELT 3               // количество элементов меню
-#define OPERATING_VOLTAGE 5.0   //опорное напряжения для АЦП
-#define SENSOR 2
-#define ONE_WIRE_BUS 2          // сигнальный провод датчика температуры
+#include <LiquidCrystal.h>     // библиотека для работы с LCD 1602
+#include <OneWire.h>           // библиотека для работы с протоколом 1-Wire
+#include <DallasTemperature.h> // библиотека для работы с датчиком DS18B20
+
+#define BUZZER_PIN 13          // пин с пищалкой
+#define NUM_ELT 3              // количество элементов меню
+#define OPERATING_VOLTAGE 5.0  // порное напряжения для АЦП
+#define SENSOR 2               // пин АЦП для pH щупа
+#define ONE_WIRE_BUS 2         // сигнальный провод датчика температуры
 
 // Коэффициенты перевода напряжения в концентрацию pH
 #define K1 -5.95
 #define K2 21.9
+
+OneWire oneWire(ONE_WIRE_BUS); // создаём объект для работы с библиотекой OneWire
  
-OneWire oneWire(ONE_WIRE_BUS);  // создаём объект для работы с библиотекой OneWire
 DallasTemperature sensor(&oneWire); // создадим объект для работы с библиотекой DallasTemperature
  
 // инициализируем объект-экран, передаём использованные 
@@ -20,6 +27,7 @@ DallasTemperature sensor(&oneWire); // создадим объект для ра
 // RS, E, DB4, DB5, DB6, DB7
 LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
 
+//Пример создание символа
 byte hui[8] = {
     0b01110,
     0b01110,
@@ -31,6 +39,7 @@ byte hui[8] = {
     0b11111
 };
 
+// Мелодия Марио
 int notes1[] = {
      // 1318, 1318, 1318, 1046, 1318, 1568, 784,
      1046, 784, 659, 880, 987, 932, 880, 784,
@@ -64,6 +73,7 @@ int delays1[] = {
     150, 150, 150, 300, 300, 150, 150, 300, 150, 150, 450, 450, 450, 1200, */
 };
 
+// Мелодия Имперский марш
 int notes[] = {
     392, 392, 392, 311, 466, 392, 311, 466, 392 /*,
     587, 587, 587, 622, 466, 369, 311, 466, 392,
@@ -80,11 +90,11 @@ int times[] = {
     150, 350, 250, 100, 750 */
 };
 
+int button; //Переменная для значения кнопок
+float x;    //Переменная для хранения значений pH
+float t;    //Переменная для хранения температуры
 
-int button;               //Переменная для кнопок
-float x;                  //Переменная для хранения значений pH
-float t;                  //Переменная для хранения температуры
-
+// Структура для элемента меню
 struct myStruc{
   byte Select;
   char Next;
@@ -94,9 +104,10 @@ struct myStruc{
   String Text;
 };
 
-myStruc menu[NUM_ELT];
-myStruc menuNow;
+myStruc menu[NUM_ELT]; // Создаём массив структур
+myStruc menuNow;       // Создаём структуру menuNow
 
+// Функция вывода ОК! для теста
 void ok(void){
   lcd.clear();
   lcd.print ("OK!");
@@ -104,6 +115,7 @@ void ok(void){
   lcd.clear();
   }
 
+// Функция чтения pH щупа
 float phMeasure(){
    float pHSum = 0;
    int adcSensor = 0;
@@ -116,34 +128,33 @@ float phMeasure(){
      pHSensor = K1 * voltageSensor + K2;                   // Конвертируем напряжение в концентрацию pH
      pHSum += pHSensor;
      }
-  return pHSum/3;
+   return pHSum/3;
   }
 
+//Функция чтения термодатчика
 float tempMeasure(){
    float tempSum = 0;
    float temperature;
    for (int i = 0; i < 3; i++){
-     sensor.requestTemperatures();                         // отправляем запрос на измерение температуры
-     temperature = sensor.getTempCByIndex(0);              // считываем данные из регистра датчик
+     sensor.requestTemperatures();                       // отправляем запрос на измерение температуры
+     temperature = sensor.getTempCByIndex(0);            // считываем данные из регистра датчик
      tempSum += temperature; 
      }
-  return tempSum/3;
+   return tempSum/3;
   }
 
 void setup() {
-  
-    pinMode(BUZZER_PIN, OUTPUT); 
-  
-    lcd.begin(16, 2);                                     // устанавливаем размер (количество столбцов и строк) экрана
-
-    lcd.createChar(0, hui);                               // create a new character
+    // Инициализация перефирии 
+    pinMode(BUZZER_PIN, OUTPUT);                        //Конфигурируем ножку МК на выход
+    lcd.begin(16, 2);                                   // устанавливаем размер (количество столбцов и строк) экрана
+    lcd.createChar(0, hui);                             // create a new character
   
   
     lcd.setCursor(3, 0);
     lcd.print("Avgust Crop");
     lcd.setCursor(3, 1);  
-    lcd.print("Protection");                              // печатаем вторую строку
-    delay(3000); 
+    lcd.print("Protection");                           
+    delay(3000);
     lcd.clear();
     
     menu[0] = {0x00, 1, 2, 0, 0, "pH measurment"};
@@ -155,16 +166,12 @@ void setup() {
     lcd.begin(16, 2);
     lcd.setCursor(0, 0);
 
-    Serial.begin(9600);                                   // инициализируем работу Serial-порта
+    Serial.begin(9600);                                 // инициализируем работу Serial-порта
     
-    sensor.begin();                                       // начинаем работу с датчиком
-    sensor.setResolution(12);                             // устанавливаем разрешение датчика от 9 до 12 бит
+    sensor.begin();                                     // начинаем работу с датчиком
+    sensor.setResolution(12);                           // устанавливаем разрешение датчика от 9 до 12 бит
 }
 void loop() {
-   //lcd.setCursor(11, 0);                                // устанавливаем курсор в колонку 0, строку 1
-   //lcd.print("100");
-   //lcd.print("\x25");
-
    lcd.setCursor(2, 0);   
    lcd.print(menuNow.Text);
    delay(100);
@@ -231,9 +238,9 @@ void loop() {
                    delay(300);
                    break;
                  }
-                 //char lcd_buffer[16];                             // Массив для вывода
+                 //char lcd_buffer[16]; // Массив для вывода
                  //sprintf(lcd_buffer,"DSdebug=%u",ds1820_devices); //запись в буфер текста и значений
-                 //lcd.print(lcd_buffer);                           // Вывод
+                 //lcd.print(lcd_buffer); // Вывод
                 }
                 break;
            case 0x01:
