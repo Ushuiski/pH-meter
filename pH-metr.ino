@@ -7,16 +7,20 @@ https://github.com/Ushuiski/pH-meter
 #include <LiquidCrystal.h>     // библиотека для работы с LCD 1602
 #include <OneWire.h>           // библиотека для работы с протоколом 1-Wire
 #include <DallasTemperature.h> // библиотека для работы с датчиком DS18B20
+#include <EEPROM.h>            // библиотека для флеш памяти
+#include <pitches.h>           // библиотека нот 
+#include <themes.h>           //add Note vale and duration 
 
 #define BUZZER_PIN 13          // пин с пищалкой
 #define NUM_ELT 3              // количество элементов меню
 #define OPERATING_VOLTAGE 5.0  // порное напряжения для АЦП
 #define SENSOR 2               // пин АЦП для pH щупа
 #define ONE_WIRE_BUS 2         // сигнальный провод датчика температуры
+#define REST 0
 
 // Коэффициенты перевода напряжения в концентрацию pH
-#define K1 -5.95
-#define K2 21.9
+#define K1 -0.0335
+#define K2 24.2
 
 OneWire oneWire(ONE_WIRE_BUS); // создаём объект для работы с библиотекой OneWire
  
@@ -29,7 +33,7 @@ LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
 
 //Пример создание символа
 byte hui[8] = {
-    0b01110,
+    0b00100,
     0b01110,
     0b01110,
     0b01110,
@@ -74,7 +78,7 @@ int delays1[] = {
 };
 
 // Мелодия Имперский марш
-int notes[] = {
+int notesIM[] = {
     392, 392, 392, 311, 466, 392, 311, 466, 392 /*,
     587, 587, 587, 622, 466, 369, 311, 466, 392,
     784, 392, 392, 784, 739, 698, 659, 622, 659,
@@ -82,13 +86,76 @@ int notes[] = {
     311, 369, 311, 466, 392 */
 };
 
-int times[] = {
+int timesIM[] = {
     350, 350, 350, 250, 100, 350, 250, 100, 700 /*,
     350, 350, 350, 250, 100, 350, 250, 100, 700,
     350, 250, 100, 350, 250, 100, 100, 100, 450,
     150, 350, 250, 100, 100, 100, 450,
     150, 350, 250, 100, 750 */
 };
+
+
+
+
+// change this to make the song slower or faster
+int tempo=114; 
+
+// change this to whichever pin you want to use
+int buzzer = 13;
+
+// notes of the moledy followed by the duration.
+// a 4 means a quarter note, 8 an eighteenth , 16 sixteenth, so on
+// !!negative numbers are used to represent dotted notes,
+// so -4 means a dotted quarter note, that is, a quarter plus an eighteenth!!
+int melody[] = {
+
+  
+  NOTE_E4,4,  NOTE_E4,4,  NOTE_F4,4,  NOTE_G4,4,//1
+  NOTE_G4,4,  NOTE_F4,4,  NOTE_E4,4,  NOTE_D4,4,
+  NOTE_C4,4,  NOTE_C4,4,  NOTE_D4,4,  NOTE_E4,4,
+  NOTE_E4,-4, NOTE_D4,8,  NOTE_D4,2,
+
+  NOTE_E4,4,  NOTE_E4,4,  NOTE_F4,4,  NOTE_G4,4,//4
+  NOTE_G4,4,  NOTE_F4,4,  NOTE_E4,4,  NOTE_D4,4,
+  NOTE_C4,4,  NOTE_C4,4,  NOTE_D4,4,  NOTE_E4,4,
+  NOTE_D4,-4,  NOTE_C4,8,  NOTE_C4,2,
+
+  NOTE_D4,4,  NOTE_D4,4,  NOTE_E4,4,  NOTE_C4,4,//8
+  NOTE_D4,4,  NOTE_E4,8,  NOTE_F4,8,  NOTE_E4,4, NOTE_C4,4,
+  NOTE_D4,4,  NOTE_E4,8,  NOTE_F4,8,  NOTE_E4,4, NOTE_D4,4,
+  NOTE_C4,4,  NOTE_D4,4,  NOTE_G3,2,
+
+  NOTE_E4,4,  NOTE_E4,4,  NOTE_F4,4,  NOTE_G4,4,//12
+  NOTE_G4,4,  NOTE_F4,4,  NOTE_E4,4,  NOTE_D4,4,
+  NOTE_C4,4,  NOTE_C4,4,  NOTE_D4,4,  NOTE_E4,4,
+  NOTE_D4,-4,  NOTE_C4,8,  NOTE_C4,2
+  
+};
+
+// sizeof gives the number of bytes, each int value is composed of two bytes (16 bits)
+// there are two values per note (pitch and duration), so for each note there are four bytes
+int notes=sizeof(melody)/sizeof(melody[0])/2; 
+
+// this calculates the duration of a whole note in ms (60s/tempo)*4 beats
+int wholenote = (60000 * 4) / tempo;
+
+int divider = 0, noteDuration = 0;
+
+// Бумер
+int notes2[] = {
+     329, 392, 392, 329, 440, 392, 440, 392, 440, 392, 440, 392, 440, 493
+};
+
+int times2[] = {
+    300, 600, 300, 600, 300, 300, 300, 300, 300, 300, 300, 300, 300, 600
+};
+
+int delays2[] = {
+    200, 800, 200, 800, 180, 180, 180, 180, 180, 180, 180, 180, 180, 400
+};
+
+
+
 
 int button; //Переменная для значения кнопок
 float x;    //Переменная для хранения значений pH
@@ -110,9 +177,207 @@ myStruc menuNow;       // Создаём структуру menuNow
 // Функция вывода ОК! для теста
 void ok(void){
   lcd.clear();
-  lcd.print ("OK!");
-  delay(3000);
+  calib();
+    //for (int i = 0; i < 14; i++){
+  //     tone(BUZZER_PIN, notes2[i], times2[i]);
+  //     delay(delays2[i]);
+  //     }
+  //lcd.clear();
+  //lcd.setCursor (0, 1);
+  //lcd.print ("lect i ne reset"); 
+  //delay(2000);
+  //button = analogRead (0);
+  //while (1){
+  //  button = analogRead(0);
+  //  if (button < 600) { 
+  //    lcd.clear();
+  //    delay(300);
+  //   break;
+  //  }
+  //}
+  //lcd.print ("123");
+  //delay(3000);
   lcd.clear();
+}
+// калибровка пиашметра
+void calib(void){
+  float f = 0;
+  float f1 = 0;
+  //int f2 = 0;
+  float a = 0;
+  float x1 = 0;
+  float x2 = 0;
+  float x3 = 0;
+  float y1 = 4.01;
+  float y2 = 6.86;
+  float y3 = 9.18;
+  float k1 = 0.0000;
+  float k2 = 0.0000;
+  lcd.clear();
+  lcd.print("Please 4,01");               //буфер 4,01
+  lcd.setCursor (0, 1);
+  lcd.print ("Press right"); 
+  while (1){
+    button = analogRead(0);
+    if (button < 600) { 
+      lcd.clear();
+      delay(300);
+      break;
+    }
+  }
+  do
+  {  f = analogRead(SENSOR);
+     Serial.print (f,2);
+     Serial.print ("\n");
+     lcd.print("Calibration...");
+     lcd.setCursor (0, 1);
+     lcd.print("4.01");
+     delay(5000);
+     f1 = analogRead(SENSOR);
+     a = abs ( f1 - f );
+     Serial.print (f1,2);
+     Serial.print ("\n");
+     Serial.print (a);
+     Serial.print ("\n");
+     lcd.clear();
+  }
+  while ( a > 2);
+  x1 = f1;
+  //if (a > 2){
+  //  delay(30000);
+  //}
+  //f2 = analogRead(SENSOR);
+  //a = f2 - f1;
+  //if (a < 2);
+  //  x1 = f2;
+  lcd.setCursor (6, 0);
+  lcd.print("OK!");
+  lcd.setCursor (0, 1);
+  lcd.print("Press any button");
+  while (1){
+    button = analogRead(0);
+    if (button < 800) { 
+      lcd.clear();
+      delay(300);
+      break;
+    }
+  }
+  lcd.print("Please 6,86");                 //буфер 6,86
+  lcd.setCursor (0, 1);
+  lcd.print ("Press right"); 
+  while (1){
+    button = analogRead(0);
+    if (button < 600) { 
+      lcd.clear();
+      delay(300);
+      break;
+    }
+  }
+  do
+  {  f = analogRead(SENSOR);
+     Serial.print (f,2);
+     Serial.print ("\n");
+     lcd.print("Calibration...");
+     lcd.setCursor (0, 1);
+     lcd.print("6.86");
+     delay(5000);
+     f1 = analogRead(SENSOR);
+     a = abs( f1 - f);
+     Serial.print (f1,2);
+     Serial.print ("\n");
+     Serial.print (a);
+     Serial.print ("\n");
+     lcd.clear();
+  }
+  while ( a > 2);
+  x2 = f1;
+  //f = analogRead(SENSOR);
+  //delay(30000);
+  //f1 = analogRead(SENSOR);
+  //a = f1 - f;
+  //if (a > 2){
+  //  delay(30000);
+  //  }
+  //}
+  //f2 = analogRead(SENSOR);
+  //a = f2 - f1;
+  //if (a < 2);
+  //  x2 = f2;
+  lcd.setCursor (6, 0);
+  lcd.print("OK!");
+  lcd.setCursor (0, 1);
+  lcd.print("Press any button");
+  while (1){
+    button = analogRead(0);
+    if (button < 800) { 
+      lcd.clear();
+      delay(300);
+      break;
+    }
+  }
+  lcd.print("Please 9,18");                  //буфер 9,18
+  lcd.setCursor (0, 1);
+  lcd.print ("Press right"); 
+  while (1){
+    button = analogRead(0);
+    if (button < 600) { 
+      lcd.clear();
+      delay(300);
+      break;
+    }
+  }
+  do
+  {  f = analogRead(SENSOR);
+     Serial.print (f,2);
+     Serial.print ("\n");
+     lcd.print("Calibration...");
+     lcd.setCursor (0, 1);
+     lcd.print("9.18");
+     delay(5000);
+     f1 = analogRead(SENSOR);
+     a = abs (f1 - f);
+     Serial.print (f1,2);
+     Serial.print ("\n");
+     Serial.print (a);
+     Serial.print ("\n");
+     lcd.clear();
+  }
+  while ( a > 2);
+  x3 = f1;
+  //f = analogRead(SENSOR);
+  //for (int i = 0; i < 17; i++){
+  //delay(30000);
+  //}
+  //f1 = analogRead(SENSOR);
+  //a = f1 - f;
+  //if (a > 2){
+  //  delay(30000);
+  //  }
+  //}
+  //f2 = analogRead(SENSOR);
+  //a = f2 - f1;
+  //if (a < 2);
+  //  x3 = f2;
+  lcd.setCursor (6, 0);
+  lcd.print("OK!");
+  lcd.setCursor (0, 1);
+  lcd.print("Press any button");
+  while (1){
+    button = analogRead(0);
+    if (button < 800) { 
+      lcd.clear();
+      delay(300);
+      break;
+    }
+  }
+  k1 = ( 3 * ((x1 * y1) + (x2 * y2) + (x3 * y3)) - ((x1 + x2 + x3)*(y1 + y2 + y3)))/(3*(x1 * x1 + x2 * x2 + x3* x3) - (x1 + x2 + x3)* (x1 + x2 + x3)) ;
+  k2 = ((y1 + y2 + y3) - k1 * (x1 + x2 + x3))/3 ;
+  Serial.print (k1);
+  Serial.print ("\n");
+  Serial.print (k2);
+  Serial.print ("\n");
+  //EEPROM.put(0, k1);
+  //EEPROM.put(2, k2);
   }
 
 // Функция чтения pH щупа
@@ -124,8 +389,8 @@ float phMeasure(){
    
    for (int i = 0; i < 3; i++){
      adcSensor = analogRead(SENSOR);                       // Считываем аналоговое значение с датчика кислотности жидкости
-     voltageSensor = adcSensor * OPERATING_VOLTAGE / 1023; // Переводим данные сенсора в напряжение
-     pHSensor = K1 * voltageSensor + K2;                   // Конвертируем напряжение в концентрацию pH
+     //voltageSensor = adcSensor * OPERATING_VOLTAGE / 1023; // Переводим данные сенсора в напряжение
+     pHSensor = K1 * adcSensor + K2;                   // Конвертируем напряжение в концентрацию pH
      pHSum += pHSensor;
      }
    return pHSum/3;
@@ -206,8 +471,8 @@ void loop() {
       delay(100);
 
       for (int i = 0; i < 9; i++){
-      tone(BUZZER_PIN, notes[i], times[i]*2);
-      delay(times[i]*2);
+      tone(BUZZER_PIN, notesIM[i], timesIM[i]*2);
+      delay(timesIM[i]*2);
       noTone(BUZZER_PIN);
       }
       }
@@ -249,7 +514,7 @@ void loop() {
            case 0x02:
                lcd.clear();
                lcd.setCursor(0, 1);
-               lcd.print("Semenachko LOH ");
+               lcd.print("IVANOV KEK LOH ");
                lcd.write(byte(0));
                delay(1000);
                lcd.clear();
