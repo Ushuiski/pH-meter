@@ -35,6 +35,18 @@ DallasTemperature sensor(&oneWire); // создадим объект для ра
 // RS, E, DB4, DB5, DB6, DB7
 LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
 
+//Пример создание символа
+byte hui[8] = {
+    0b00100,
+    0b01110,
+    0b01110,
+    0b01110,
+    0b01110,
+    0b11111,
+    0b11111,
+    0b11111
+};
+
 // Мелодия Марио
 int notes1[] = {
     // 1318, 1318, 1318, 1046, 1318, 1568, 784,
@@ -494,6 +506,7 @@ void setup() {
     pinMode(BUZZER_PIN, OUTPUT);                        
 
     lcd.begin(16, 2);
+    lcd.createChar(0, hui);                             // create a new character
     lcd.setCursor(0, 0);
 
     Serial.begin(9600);                                 // инициализируем работу Serial-порта
@@ -603,7 +616,7 @@ void loop() {
             case 0x02:
                 lcd.clear();
                 lcd.setCursor(0, 1);
-                lcd.print("IVANOV KEK LOH ");
+                lcd.print("Ty chto durak?");
                 lcd.write(byte(0));
                 delay(1000);
                 lcd.clear();
