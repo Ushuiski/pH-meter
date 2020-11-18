@@ -11,6 +11,7 @@ https://github.com/Ushuiski/pH-meter
 #include <pitches.h>           // библиотека нот 
 #include <themes.h>           //add Note vale and duration 
 
+
 #define BUZZER_PIN 13          // пин с пищалкой
 #define NUM_ELT 3              // количество элементов меню
 #define OPERATING_VOLTAGE 5.0  // порное напряжения для АЦП
@@ -19,8 +20,8 @@ https://github.com/Ushuiski/pH-meter
 #define REST 0
 
 // Коэффициенты перевода напряжения в концентрацию pH
-#define K1 -0.0335
-#define K2 24.2
+float K1 = 0, K2 = 0;
+
 
 OneWire oneWire(ONE_WIRE_BUS); // создаём объект для работы с библиотекой OneWire
  
@@ -176,34 +177,24 @@ myStruc menuNow;       // Создаём структуру menuNow
 
 // Функция вывода ОК! для теста
 void ok(void){
+  //calib();
+  float a1, b1;
   lcd.clear();
-  calib();
-    //for (int i = 0; i < 14; i++){
-  //     tone(BUZZER_PIN, notes2[i], times2[i]);
-  //     delay(delays2[i]);
-  //     }
-  //lcd.clear();
-  //lcd.setCursor (0, 1);
-  //lcd.print ("lect i ne reset"); 
-  //delay(2000);
-  //button = analogRead (0);
-  //while (1){
-  //  button = analogRead(0);
-  //  if (button < 600) { 
-  //    lcd.clear();
-  //    delay(300);
-  //   break;
-  //  }
-  //}
-  //lcd.print ("123");
-  //delay(3000);
+  EEPROM.get(1, a1);
+  EEPROM.get(5, b1);
+  lcd.print(a1, 4);
+  lcd.setCursor(0,1);
+  lcd.print(b1, 4);
+  delay(3000);
+  
   lcd.clear();
 }
+
+
 // калибровка пиашметра
 void calib(void){
   float f = 0;
   float f1 = 0;
-  //int f2 = 0;
   float a = 0;
   float x1 = 0;
   float x2 = 0;
@@ -211,8 +202,8 @@ void calib(void){
   float y1 = 4.01;
   float y2 = 6.86;
   float y3 = 9.18;
-  double k1 = 0.0000;
-  double k2 = 0.0000;
+  float k1;
+  float k2;
   lcd.clear();
   lcd.print("Please 4,01");               //буфер 4,01
   lcd.setCursor (0, 1);
@@ -225,9 +216,10 @@ void calib(void){
       break;
     }
   }
+  delay (20000);
   do
   {  f = analogRead(SENSOR);
-     Serial.print (f,2);
+     Serial.print (f,4);
      Serial.print ("\n");
      lcd.print("Calibration...");
      lcd.setCursor (0, 1);
@@ -235,7 +227,7 @@ void calib(void){
      delay(5000);
      f1 = analogRead(SENSOR);
      a = abs ( f1 - f );
-     Serial.print (f1,2);
+     Serial.print (f1,4);
      Serial.print ("\n");
      Serial.print (a);
      Serial.print ("\n");
@@ -273,9 +265,10 @@ void calib(void){
       break;
     }
   }
+  delay (20000);
   do
   {  f = analogRead(SENSOR);
-     Serial.print (f,2);
+     Serial.print (f,4);
      Serial.print ("\n");
      lcd.print("Calibration...");
      lcd.setCursor (0, 1);
@@ -283,7 +276,7 @@ void calib(void){
      delay(5000);
      f1 = analogRead(SENSOR);
      a = abs( f1 - f);
-     Serial.print (f1,2);
+     Serial.print (f1,4);
      Serial.print ("\n");
      Serial.print (a);
      Serial.print ("\n");
@@ -326,9 +319,10 @@ void calib(void){
       break;
     }
   }
+  delay (20000);
   do
   {  f = analogRead(SENSOR);
-     Serial.print (f,2);
+     Serial.print (f,4);
      Serial.print ("\n");
      lcd.print("Calibration...");
      lcd.setCursor (0, 1);
@@ -336,7 +330,7 @@ void calib(void){
      delay(5000);
      f1 = analogRead(SENSOR);
      a = abs (f1 - f);
-     Serial.print (f1,2);
+     Serial.print (f1,4);
      Serial.print ("\n");
      Serial.print (a);
      Serial.print ("\n");
@@ -372,12 +366,12 @@ void calib(void){
   }
   k1 = ( 3 * ((x1 * y1) + (x2 * y2) + (x3 * y3)) - ((x1 + x2 + x3)*(y1 + y2 + y3)))/(3*(x1 * x1 + x2 * x2 + x3* x3) - (x1 + x2 + x3)* (x1 + x2 + x3)) ;
   k2 = ((y1 + y2 + y3) - k1 * (x1 + x2 + x3))/3 ;
-  Serial.print (k1);
+  Serial.print (k1, 4);
   Serial.print ("\n");
-  Serial.print (k2);
+  Serial.print (k2, 4);
   Serial.print ("\n");
-  //EEPROM.put(0, k1);
-  //EEPROM.put(2, k2);
+  EEPROM.put(1, k1);
+  EEPROM.put(5, k2);
   }
 
 // Функция чтения pH щупа
@@ -492,7 +486,13 @@ void setup() {
     lcd.begin(16, 2);                                   // устанавливаем размер (количество столбцов и строк) экрана
     lcd.createChar(0, hui);                             // create a new character
   
-  
+
+    //EEPROM.get(1, K1);
+    //EEPROM.get(5, K2);
+    //Serial.print(K1, 4);
+    //Serial.print ("\n");
+    //Serial.print(K2, 4);
+    //Serial.print ("\n");
     lcd.setCursor(3, 0);
     lcd.print("Avgust Crop");
     lcd.setCursor(3, 1);  
