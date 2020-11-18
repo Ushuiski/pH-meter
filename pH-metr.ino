@@ -211,8 +211,8 @@ void calib(void){
   float y1 = 4.01;
   float y2 = 6.86;
   float y3 = 9.18;
-  float k1 = 0.0000;
-  float k2 = 0.0000;
+  double k1 = 0.0000;
+  double k2 = 0.0000;
   lcd.clear();
   lcd.print("Please 4,01");               //буфер 4,01
   lcd.setCursor (0, 1);
@@ -231,7 +231,7 @@ void calib(void){
      Serial.print ("\n");
      lcd.print("Calibration...");
      lcd.setCursor (0, 1);
-     lcd.print("4.01");
+     lcd.print("4,01");
      delay(5000);
      f1 = analogRead(SENSOR);
      a = abs ( f1 - f );
@@ -279,7 +279,7 @@ void calib(void){
      Serial.print ("\n");
      lcd.print("Calibration...");
      lcd.setCursor (0, 1);
-     lcd.print("6.86");
+     lcd.print("6,86");
      delay(5000);
      f1 = analogRead(SENSOR);
      a = abs( f1 - f);
@@ -332,7 +332,7 @@ void calib(void){
      Serial.print ("\n");
      lcd.print("Calibration...");
      lcd.setCursor (0, 1);
-     lcd.print("9.18");
+     lcd.print("9,18");
      delay(5000);
      f1 = analogRead(SENSOR);
      a = abs (f1 - f);
@@ -407,6 +407,84 @@ float tempMeasure(){
      }
    return tempSum/3;
   }
+
+
+//ГОСТ 33776-2016
+void gost(void){
+  int o = 0;
+  float x1;
+  float t1;
+  float x3;
+  float t3;
+  lcd.print("Put your rastvor");
+  lcd.setCursor(0,1);
+  lcd.print("Press any button");
+  while (1){
+    button = analogRead(0);
+    if (button < 800) { 
+      lcd.clear();
+      delay(300);
+      break;
+    }
+  }
+  for (o = 1; o <= 120; o++){
+    if (o = 61){
+      x1 = phMeasure();
+      t1 = tempMeasure();
+      continue;
+    }
+    x = phMeasure();
+    lcd.print("pH=");
+    lcd.print(x);
+    lcd.print("\x3B");
+    t = tempMeasure();
+    lcd.print("T = ");
+    lcd.print(t);
+    lcd.setCursor(0,1);
+    delay(1000);  
+  }
+  float x2 = phMeasure();
+  float xp = phMeasure();
+  float t2 = tempMeasure();
+  float g = abs(x2 - x1);
+  if (g > 0,1){
+     for (o = 1; o <= 480; o++){
+      int ost;
+      ost = o % 60;
+      if (ost = 0){
+        x3 = phMeasure();
+        t3 = tempMeasure();
+        g = abs(x3 - xp);
+        if (g <= 0,1){
+          break;
+        }
+        xp = phMeasure();
+        continue;
+      }
+     delay(1000);
+     }
+  }
+  lcd.print(x1);
+  lcd.setCursor (0,7);
+  lcd.print(x2);
+  lcd.setCursor (0,12);
+  lcd.print(x3);
+  lcd.setCursor (1,0);
+  lcd.print(t1);
+  lcd.setCursor (1,7);
+  lcd.print(t2);
+  lcd.setCursor (1,12);
+  lcd.print(t3);
+  while (1){
+    button = analogRead(0);
+    if (button < 800) { 
+      lcd.clear();
+      delay(300);
+      break;
+    }
+  }
+  
+}
 
 void setup() {
     // Инициализация перефирии 
