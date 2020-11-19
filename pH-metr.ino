@@ -1,11 +1,9 @@
 /* #######################################################################
 pH метр на базе Arduino Uno ver: 2.0
-
 Разработчики: 
 Иванов Р.Н. 
 https://github.com/Ushuiski/pH-meter
 r.ivanov@avgust.com
-
 Семеняченко А.А. 
 https://github.com/sechanius/pH-meter
 a.semenyachenko@avgust.com
@@ -611,7 +609,7 @@ void loop() {
                 }
                 break;
             case 0x01:
-                ok();
+                calib();
                 break;
             case 0x02:
                 lcd.clear();
@@ -620,6 +618,7 @@ void loop() {
                 lcd.write(byte(0));
                 delay(1000);
                 lcd.clear();
+                ok();
         }
         delay(100);
     } 
